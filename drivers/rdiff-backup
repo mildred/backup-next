@@ -1,0 +1,50 @@
+#!/bin/bash
+
+. "$BACKUP_DIR/rdiff-backup.conf"
+
+: ${AUTO_PRUNE:=false}
+
+act="$1"
+shift
+case "$act" in
+    init)
+        subact="$1"
+        shift
+        ( set -x
+          rdiff-backup "${FLAGS[@]}" "$@" --test-server "$BACKUP_DIR"
+        )
+    ;;
+    backup)
+        dir="$1"
+        shift
+        ( set -x
+          rdiff-backup "${FLAGS[@]}" "$@" "$dir" "$BACKUP_DIR/${dir#/}"
+        )
+        if $AUTO_PRUNE; then
+        ( set -x
+          rdiff-backup "${FLAGS[@]}" --remove-older-than "$AUTO_PRUNE_DELAY" "$BACKUP_DIR/${dir#/}"
+        )
+        fi
+    ;;
+    list)
+        dir="$1"
+        shift
+        ( set -x
+          rdiff-backup --list-increments "${FLAGS[@]}" "$@" "$BACKUP_DIR/${dir#/}"
+        )
+    ;;
+    restore)
+        dir="$1"
+        shift
+        ( set -x
+          rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$BACKUP_DIR/${dir#/}" "$dir"
+        )
+    ;;
+    commit)
+        subact="$1"
+        shift
+    ;;
+    *)
+        echo "Unimplemented $act"
+    ;;
+esac
