@@ -19,7 +19,7 @@ main() {
             ;;
         *)
             echo "${0##*/} backup DESCIPTOR"
-            echo "${0##*/} restore DESCIPTOR"
+            echo "${0##*/} restore DESCIPTOR [...]"
             echo "${0##*/} list DESCIPTOR"
             echo "${0##*/} help"
             return 1
@@ -76,19 +76,25 @@ find_driver(){
 # READ  $descriptor : the descriptor
 # WRITE $type       : the descriptor type
 get_type(){
-    if [[ -L $descriptor ]] && [[ -d $descriptor ]]; then
+    # Get the extension
+    local type0=${descriptor##*/}
+    type=${type0##*.}
+
+    if [[ $type = ${type0} ]] && [[ -d $descriptor ]]; then
+        # If no extension and is a directory, consider it a sub
+        type=sub
+    elif [[ $type == dir ]] && [[ -L $descriptor ]]; then
+        # Alias *.dir links as link
         type=link
-    elif [[ -d $descriptor ]]; then
-        type=dir
-    else
-        type=${descriptor##*/}
-        type=${type##*.}
+    elif [[ $type == d ]];
+        # Alias *.d are sub
+        then type=sub;
     fi
 }
 
 # READ $1      : the action (backup, list)
 # READ $2      : the backup descriptor
-# READ $driver : the driver to use. If empty, the descriptor must be a dir
+# READ $driver : the driver to use. If empty, the descriptor must be a directory
 run() {
     local type
     local res=0
@@ -99,13 +105,15 @@ run() {
     local driver_dir="$descriptor"
     local Action="$(tr a-z A-Z <<<${action:0:1})${action:1}"
     shift 2
-    
+
     get_type
-    
-    if [[ $type != dir ]]; then
+
+    # look in the same directory of the driver for anything else but sub
+    if [[ $type != sub ]]; then
         driver_dir="${driver_dir%/?*}"
     fi
-    if [[ $type = dir ]] || [[ $driver = : ]]; then
+
+    if [[ $type = sub ]] || [[ $driver = : ]]; then
         local old_driver_dir="$driver_dir"
         if find_driver; then
             driver init $action || return 1
@@ -115,7 +123,7 @@ run() {
             return 1
         fi
     fi
-    
+
     if type "run_$type" >/dev/null 2>&1; then
         "run_$type" "$@"
         let res+=$?
@@ -123,7 +131,7 @@ run() {
         echo "$descriptor: Unknown type $type" >&2
         let res++
     fi
-    
+
     if [[ $res = 0 ]] && $driver_change; then
         driver commit $action || let res++
     fi
@@ -135,7 +143,7 @@ banner_action(){
     echo -e "$Bold--> $BIGreen$Action $1$Color_Off"
 }
 
-run_dir(){
+run_sub(){
     local res=0
     banner_action "$descriptor/..."
     for f in "$descriptor"/*; do

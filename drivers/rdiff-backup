@@ -3,6 +3,7 @@
 . "$BACKUP_DIR/rdiff-backup.conf"
 
 : ${AUTO_PRUNE:=false}
+: ${AUTO_PRUNE_DELAY:=1W}
 
 act="$1"
 shift
@@ -11,18 +12,18 @@ case "$act" in
         subact="$1"
         shift
         ( set -x
-          rdiff-backup "${FLAGS[@]}" "$@" --test-server "$BACKUP_DIR"
+          rdiff-backup "${FLAGS[@]}" "$@" --test-server "$DESTINATION"
         )
     ;;
     backup)
         dir="$1"
         shift
         ( set -x
-          rdiff-backup "${FLAGS[@]}" "$@" "$dir" "$BACKUP_DIR/${dir#/}"
+          rdiff-backup "${FLAGS[@]}" "$@" "$dir" "$DESTINATION/${dir#/}"
         )
         if $AUTO_PRUNE; then
         ( set -x
-          rdiff-backup "${FLAGS[@]}" --remove-older-than "$AUTO_PRUNE_DELAY" "$BACKUP_DIR/${dir#/}"
+          rdiff-backup "${FLAGS[@]}" --remove-older-than "$AUTO_PRUNE_DELAY" "$DESTINATION/${dir#/}"
         )
         fi
     ;;
@@ -30,14 +31,14 @@ case "$act" in
         dir="$1"
         shift
         ( set -x
-          rdiff-backup --list-increments "${FLAGS[@]}" "$@" "$BACKUP_DIR/${dir#/}"
+          rdiff-backup --list-increments "${FLAGS[@]}" "$@" "$DESTINATION/${dir#/}"
         )
     ;;
     restore)
         dir="$1"
         shift
         ( set -x
-          rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$BACKUP_DIR/${dir#/}" "$dir"
+          rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$DESTINATION/${dir#/}" "$dir"
         )
     ;;
     commit)
