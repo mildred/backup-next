@@ -6,9 +6,11 @@ main() {
     case "$1" in
         backup)
             run backup "$2"
+            banner_results
             ;;
         list)
             run list "$2"
+            banner_results
             ;;
         restore)
             descriptor="$2"
@@ -16,6 +18,7 @@ main() {
             args=()
             extract_args "$@"
             run restore "$descriptor" "${args[@]}"
+            banner_results
             ;;
         *)
             echo "${0##*/} backup DESCIPTOR"
@@ -118,7 +121,6 @@ run() {
     if [[ $type != sub ]]; then
         driver_dir="${driver_dir%/?*}"
     fi
-    echo "driver_dir(run)=$driver_dir"
 
     if [[ $type = sub ]] || [[ $driver = : ]]; then
         local old_driver_dir="$driver_dir"
@@ -126,7 +128,7 @@ run() {
             driver init $action || return 1
             driver_change=true
         elif [[ $driver = : ]]; then
-            echo "$old_driver_dir: Could not find driver" >&2
+            banner_error "$old_driver_dir: Could not find driver"
             return 1
         fi
     fi
@@ -139,8 +141,7 @@ run() {
         "run_$type" "$@"
         let res+=$?
     else
-        echo "$descriptor: Unknown type $type" >&2
-        let res++
+        banner_warning "$descriptor: Unknown type $type"
     fi
 
     if [[ $res = 0 ]] && $driver_change; then
@@ -150,8 +151,24 @@ run() {
     return $res
 }
 
+banner_error(){
+    echo -e "$Bold--> ${BIRed}Error: $1$Color_Off" >&2
+}
+
+banner_warning(){
+    echo -e "$Bold--> ${BIYellow}Warning: $1$Color_Off" >&2
+}
+
 banner_action(){
     echo -e "$Bold--> $BIGreen$Action $1$Color_Off"
+}
+
+banner_results(){
+    if [[ $1 -eq 0 ]]; then
+        echo -e "$Bold--> $BIGreen${2:-Success}$Color_Off"
+    else
+        echo -e "$Bold--> $BIRed${2:-Failure} ($1)$Color_Off"
+    fi
 }
 
 run_sub(){
