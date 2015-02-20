@@ -27,13 +27,13 @@ case "$act" in
         get_destdir "$1"
         dirflags=()
         if ! [[ -d $dir ]]; then
-            dirflags=(--include "$dir" --exclude '**')
-            dir="$(dirname "$dir")/"
+            dirflags=(--include "$(readlink -f "${dir%/*}")/${dir##*/}" --exclude '**')
+            dir="${dir%/*}/"
         fi
         shift
         set -e
         ( set -x
-          rdiff-backup "${FLAGS[@]}" "$@" "${dirflags[@]}" "$(readlink -f $dir)" "$DESTINATION/$destdir"
+          rdiff-backup "${FLAGS[@]}" "$@" "${dirflags[@]}" "$(readlink -f "$dir")" "$DESTINATION/$destdir"
         )
         set +e
         if $AUTO_PRUNE; then
@@ -57,7 +57,7 @@ case "$act" in
         shift
         set -e
         ( set -x
-          rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$(readlink -f $dir)"
+          rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$(readlink -f "$dir")"
         )
     ;;
     commit)
