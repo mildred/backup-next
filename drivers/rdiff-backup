@@ -5,6 +5,10 @@
 : ${AUTO_PRUNE:=false}
 : ${AUTO_PRUNE_DELAY:=1W}
 
+get_destdir(){
+    destdir="${1#/}"; destdir="${destdir%/}"; destdir="${destdir//\//-}"
+}
+
 act="$1"
 shift
 case "$act" in
@@ -17,28 +21,36 @@ case "$act" in
     ;;
     backup)
         dir="$1"
+        get_destdir "$1"
+        dirflags=()
+        if ! [[ -d $dir ]]; then
+            dirflags=(--include "$dir" --exclude '**')
+            dir="$(dirname "$dir")"
+        fi
         shift
         ( set -x
-          rdiff-backup "${FLAGS[@]}" "$@" "$dir" "$DESTINATION/${dir#/}"
+          rdiff-backup "${FLAGS[@]}" "$@" "${dirflags[@]}" "$dir" "$DESTINATION/$destdir"
         )
         if $AUTO_PRUNE; then
         ( set -x
-          rdiff-backup "${FLAGS[@]}" --remove-older-than "$AUTO_PRUNE_DELAY" "$DESTINATION/${dir#/}"
+          rdiff-backup "${FLAGS[@]}" --remove-older-than "$AUTO_PRUNE_DELAY" "$DESTINATION/$destdir"
         )
         fi
     ;;
     list)
         dir="$1"
+        get_destdir "$1"
         shift
         ( set -x
-          rdiff-backup --list-increments "${FLAGS[@]}" "$@" "$DESTINATION/${dir#/}"
+          rdiff-backup --list-increments "${FLAGS[@]}" "$@" "$DESTINATION/$destdir"
         )
     ;;
     restore)
         dir="$1"
+        get_destdir "$1"
         shift
         ( set -x
-          rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$DESTINATION/${dir#/}" "$dir"
+          rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$dir"
         )
     ;;
     commit)
