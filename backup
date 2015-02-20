@@ -188,7 +188,7 @@ run_sub(){
 }
 
 run_link(){
-    local link="$(readlink -f "$descriptor")"
+    local link="$(readlink "$descriptor")"
     banner_action "$descriptor -> $link"
     driver $action "$link" "$@"
 }
