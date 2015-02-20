@@ -17,6 +17,7 @@ case "$act" in
     init)
         subact="$1"
         shift
+        set -e
         ( set -x
           rdiff-backup "${FLAGS[@]}" "$@" --test-server "$DESTINATION"
         )
@@ -30,8 +31,9 @@ case "$act" in
             dir="$(dirname "$dir")/"
         fi
         shift
+        set -e
         ( set -x
-          rdiff-backup "${FLAGS[@]}" "$@" "${dirflags[@]}" "$dir" "$DESTINATION/$destdir"
+          rdiff-backup "${FLAGS[@]}" "$@" "${dirflags[@]}" "$(readlink -f $dir)" "$DESTINATION/$destdir"
         )
         if $AUTO_PRUNE; then
         ( set -x
@@ -43,6 +45,7 @@ case "$act" in
         dir="$1"
         get_destdir "$1"
         shift
+        set -e
         ( set -x
           rdiff-backup --list-increments "${FLAGS[@]}" "$@" "$DESTINATION/$destdir"
         )
@@ -51,8 +54,9 @@ case "$act" in
         dir="$1"
         get_destdir "$1"
         shift
+        set -e
         ( set -x
-          rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$dir"
+          rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$(readlink -f $dir)"
         )
     ;;
     commit)
