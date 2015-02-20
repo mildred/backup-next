@@ -191,7 +191,7 @@ banner_action(){
 }
 
 banner_info(){
-    echo -e "$Bold--> $BICyan$1$Color_Off"
+    echo -e "$Bold--> $BIGreen$1$Color_Off"
 }
 
 banner_results(){
