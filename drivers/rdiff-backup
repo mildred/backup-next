@@ -27,7 +27,7 @@ case "$act" in
         dirflags=()
         if ! [[ -d $dir ]]; then
             dirflags=(--include "$dir" --exclude '**')
-            dir="$(dirname "$dir")"
+            dir="$(dirname "$dir")/"
         fi
         shift
         ( set -x
