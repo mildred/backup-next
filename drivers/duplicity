@@ -1,0 +1,66 @@
+#!/bin/bash
+set -e
+. "$BACKUP_DRIVER_DIR/duplicity.conf"
+set +e
+
+: ${AUTO_PRUNE:=false}
+: ${AUTO_PRUNE_DELAY:=1W}
+: ${FULL_BACKUP_PERIOD:=$AUTO_PRUNE_DELAY}
+
+get_destdir(){
+    destdir="${1#/}"; destdir="${destdir%/}"; destdir="${destdir//\//-}"
+}
+
+act="$1"
+shift
+case "$act" in
+    init)
+        subact="$1"
+        shift
+    ;;
+    backup)
+        dir="$1"
+        get_destdir "$1"
+        dirflags=()
+        if ! [[ -d $dir ]]; then
+            dirflags=(--include "$(readlink -f "${dir%/*}")/${dir##*/}" --exclude '**')
+            dir="${dir%/*}/"
+        fi
+        shift
+        set -e
+        ( set -x
+          duplicity --full-if-older-than $FULL_BACKUP_PERIOD "${FLAGS[@]}" "${FLAGS_BACKUP[@]}" "$@" "${dirflags[@]}" "$(readlink -f "$dir")" "$DESTINATION/$destdir"
+        )
+        set +e
+        if $AUTO_PRUNE; then
+        ( set -x
+          duplicity remove-older-than "$AUTO_PRUNE_DELAY" --force "${FLAGS[@]}" "$DESTINATION/$destdir"
+        )
+        fi
+    ;;
+    list)
+        dir="$1"
+        get_destdir "$1"
+        shift
+        set -e
+        ( set -x
+          duplicity collection-status "${FLAGS[@]}" "$@" "$DESTINATION/$destdir"
+        )
+    ;;
+    restore)
+        dir="$1"
+        get_destdir "$1"
+        shift
+        set -e
+        ( set -x
+          duplicity restore "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$(readlink -f "$dir")"
+        )
+    ;;
+    commit)
+        subact="$1"
+        shift
+    ;;
+    *)
+        echo "Unimplemented $act"
+    ;;
+esac

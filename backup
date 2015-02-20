@@ -67,12 +67,13 @@ driver(){
     fi
 }
 
-# READ  $driver_dir    : the location where to find the driver
-# READ  $driver        : if different than ":", will recurse parent directories
+# READ   $driver_dir    : the location where to find the driver
+# READ   $driver        : if different than ":", will recurse parent directories
 #                        to find driver
-# WRITE $driver        : the driver that was found
-# WRITE $driver_dir    : where the driver was found
-# WRITE $?             : failure if driver was not found
+# WRITE  $driver        : the driver that was found
+# WRITE  $driver_dir    : where the driver was found
+# APPEND $driver_lookup : where the driver was looked up (array)
+# WRITE  $?             : failure if driver was not found
 find_driver(){
     if [[ -e $driver_dir/driver.sh ]]; then
         . "$driver_dir/driver.sh"
@@ -81,6 +82,8 @@ find_driver(){
         driver="$driver_dir/driver"
         return 0
     fi
+
+    driver_lookup+=("$driver_dir/driver.sh" "$driver_dir/driver")
 
     if [[ $driver != : ]]; then
         local old_driver_dir="$driver_dir"
@@ -141,11 +144,16 @@ run() {
 
     if [[ $type = sub ]] || [[ $driver = : ]]; then
         local old_driver_dir="$driver_dir"
+        local driver_lookup=()
         if find_driver; then
             driver init $action || return 1
+            banner_info "Found driver: $driver"
             driver_change=true
         elif [[ $driver = : ]]; then
-            banner_error "$old_driver_dir: Could not find driver"
+            banner_error "$old_driver_dir: Could not find driver in $driver_dir"
+            for location in "${driver_lookup[@]}"; do
+                echo "   Not found: $location"
+            done
             return 1
         fi
     fi
@@ -180,6 +188,10 @@ banner_warning(){
 
 banner_action(){
     echo -e "$Bold--> $BIGreen$Action $1$Color_Off"
+}
+
+banner_info(){
+    echo -e "$Bold--> $BICyan$1$Color_Off"
 }
 
 banner_results(){
