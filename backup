@@ -189,6 +189,9 @@ run_sub(){
 
 run_link(){
     local link="$(readlink "$descriptor")"
+    if [[ -d $link ]]; then
+        link="${link%/}/"
+    fi
     banner_action "$descriptor -> $link"
     driver $action "$link" "$@"
 }
