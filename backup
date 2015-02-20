@@ -6,11 +6,15 @@ main() {
     case "$1" in
         backup)
             run backup "$2"
-            banner_results
+            res=$?
+            banner_results $res
+            exit $res
             ;;
         list)
             run list "$2"
-            banner_results
+            res=$?
+            banner_results $res
+            exit $res
             ;;
         restore)
             descriptor="$2"
@@ -18,7 +22,9 @@ main() {
             args=()
             extract_args "$@"
             run restore "$descriptor" "${args[@]}"
-            banner_results
+            res=$?
+            banner_results $res
+            exit $res
             ;;
         *)
             echo "${0##*/} backup DESCIPTOR"
@@ -47,7 +53,18 @@ driver(){
     export BACKUP_DRIVER_DIR="$driver_dir"
     export BACKUP_DRIVER_SOURCE_DIR="$(readlink -f $driver)"
     export BACKUP_DRIVER_SOURCE_DIR="${BACKUP_DRIVER_DIR%/*}"
-    "$driver" "$@"
+    if "$driver" "$@"; then :; else
+        local res=$?
+        banner_error "Driver failed with status $res"
+        (
+        echo "    driver: $driver"
+        echo "    arguments: $@"
+        echo "    BACKUP_DIR=$BACKUP_DIR"
+        echo "    BACKUP_DRIVER_DIR=$BACKUP_DRIVER_DIR"
+        echo "    BACKUP_DRIVER_SOURCE_DIR=$BACKUP_DRIVER_SOURCE_DIR"
+        ) >&2
+        return $res
+    fi
 }
 
 # READ  $driver_dir    : the location where to find the driver
@@ -139,13 +156,15 @@ run() {
 
     if type "run_$type" >/dev/null 2>&1; then
         "run_$type" "$@"
-        let res+=$?
+        ((res+=$?))
     else
         banner_warning "$descriptor: Unknown type $type"
     fi
 
     if [[ $res = 0 ]] && $driver_change; then
-        driver commit $action || let res++
+        if ! driver commit $action; then
+            ((res++))
+        fi
     fi
 
     return $res
@@ -182,7 +201,7 @@ run_sub(){
         subdir="$up_subdir/${f##*/}"
         subdir="${subdir#/}"
         run $action "$f" "$@"
-        let res+=$?
+        ((res+=$?))
     done
     return $res
 }

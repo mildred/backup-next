@@ -35,6 +35,7 @@ case "$act" in
         ( set -x
           rdiff-backup "${FLAGS[@]}" "$@" "${dirflags[@]}" "$(readlink -f $dir)" "$DESTINATION/$destdir"
         )
+        set +e
         if $AUTO_PRUNE; then
         ( set -x
           rdiff-backup "${FLAGS[@]}" --remove-older-than "$AUTO_PRUNE_DELAY" "$DESTINATION/$destdir"
