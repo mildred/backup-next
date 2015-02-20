@@ -1,6 +1,8 @@
 #!/bin/bash
 
-. "$BACKUP_DIR/rdiff-backup.conf"
+set -e
+. "$BACKUP_DRIVER_DIR/rdiff-backup.conf"
+set +e
 
 : ${AUTO_PRUNE:=false}
 : ${AUTO_PRUNE_DELAY:=1W}

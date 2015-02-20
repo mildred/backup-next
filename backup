@@ -40,9 +40,10 @@ extract_args(){
 # READ $driver
 # READ $driver_dir
 driver(){
-    export BACKUP_DIR="$driver_dir"
-    export BACKUP_DRIVER_DIR="$(readlink -f $driver)"
-    export BACKUP_DRIVER_DIR="${BACKUP_DRIVER_DIR%/*}"
+    export BACKUP_DIR="$driver_dir/$subdir"
+    export BACKUP_DRIVER_DIR="$driver_dir"
+    export BACKUP_DRIVER_SOURCE_DIR="$(readlink -f $driver)"
+    export BACKUP_DRIVER_SOURCE_DIR="${BACKUP_DRIVER_DIR%/*}"
     "$driver" "$@"
 }
 
@@ -60,16 +61,20 @@ find_driver(){
         driver="$driver_dir/driver"
         return 0
     fi
-    
+
     if [[ $driver != : ]]; then
         local old_driver_dir="$driver_dir"
         driver_dir="${driver_dir%/*}"
         if [[ $old_driver_dir != $driver_dir ]]; then
-            find_driver
-            return $?
+            if ! find_driver; then
+                driver_dir="$old_driver_dir"
+                return 1
+            else
+                return 0
+            fi
         fi
     fi
-    
+
     return 1
 }
 
@@ -102,7 +107,8 @@ run() {
     local driver_change=false
     local action="$1"
     local descriptor="$2"
-    local driver_dir="$descriptor"
+    local up_driver_dir="$driver_dir"
+    local driver_dir="${descriptor%/}"
     local Action="$(tr a-z A-Z <<<${action:0:1})${action:1}"
     shift 2
 
@@ -112,6 +118,7 @@ run() {
     if [[ $type != sub ]]; then
         driver_dir="${driver_dir%/?*}"
     fi
+    echo "driver_dir(run)=$driver_dir"
 
     if [[ $type = sub ]] || [[ $driver = : ]]; then
         local old_driver_dir="$driver_dir"
@@ -122,6 +129,10 @@ run() {
             echo "$old_driver_dir: Could not find driver" >&2
             return 1
         fi
+    fi
+
+    if ! $driver_change; then
+        driver_dir="$up_driver_dir"
     fi
 
     if type "run_$type" >/dev/null 2>&1; then
@@ -145,10 +156,14 @@ banner_action(){
 
 run_sub(){
     local res=0
+    local up_subdir="$subdir"
+    local subdir="$up_subdir"
     banner_action "$descriptor/..."
     for f in "$descriptor"/*; do
         [[ ${f##*/} = driver    ]] && continue
         [[ ${f##*/} = driver.sh ]] && continue
+        subdir="$up_subdir/${f##*/}"
+        subdir="${subdir#/}"
         run $action "$f" "$@"
         let res+=$?
     done
