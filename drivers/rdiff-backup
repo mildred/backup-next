@@ -11,6 +11,13 @@ get_destdir(){
     destdir="${1#/}"; destdir="${destdir%/}"; destdir="${destdir//\//-}"
 }
 
+run() {
+    echo + "$@"
+    if ! ${BACKUP_DRY_RUN:-false}; then
+        "$@"
+    fi
+}
+
 act="$1"
 shift
 case "$act" in
@@ -18,9 +25,7 @@ case "$act" in
         subact="$1"
         shift
         set -e
-        ( set -x
-          rdiff-backup "${FLAGS[@]}" "$@" --test-server "$DESTINATION"
-        )
+        run rdiff-backup "${FLAGS[@]}" "$@" --test-server "$DESTINATION"
     ;;
     backup)
         dir="$1"
@@ -32,14 +37,10 @@ case "$act" in
         fi
         shift
         set -e
-        ( set -x
-          rdiff-backup "${FLAGS[@]}" "$@" "${dirflags[@]}" "$(readlink -f "$dir")" "$DESTINATION/$destdir"
-        )
+        run rdiff-backup "${FLAGS[@]}" "$@" "${dirflags[@]}" "$(readlink -f "$dir")" "$DESTINATION/$destdir"
         set +e
         if $AUTO_PRUNE; then
-        ( set -x
-          rdiff-backup "${FLAGS[@]}" --remove-older-than "$AUTO_PRUNE_DELAY" "$DESTINATION/$destdir"
-        )
+          run rdiff-backup "${FLAGS[@]}" --remove-older-than "$AUTO_PRUNE_DELAY" "$DESTINATION/$destdir"
         fi
     ;;
     list)
@@ -47,18 +48,14 @@ case "$act" in
         get_destdir "$1"
         shift
         set -e
-        ( set -x
-          rdiff-backup --list-increments "${FLAGS[@]}" "$@" "$DESTINATION/$destdir"
-        )
+        run rdiff-backup --list-increments "${FLAGS[@]}" "$@" "$DESTINATION/$destdir"
     ;;
     restore)
         dir="$1"
         get_destdir "$1"
         shift
         set -e
-        ( set -x
-          rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$(readlink -f "$dir")"
-        )
+        run rdiff-backup --restore-as-of now "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$(readlink -f "$dir")"
     ;;
     commit)
         subact="$1"

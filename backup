@@ -2,53 +2,139 @@
 
 driver=:
 
+opt_n=false
+
 main() {
     case "$1" in
         backup)
-            run backup "$2"
+            shift 1
+            extract_opts "$@"
+            run backup "${opts[0]}" "${args[@]}"
             res=$?
             banner_results $res
             exit $res
             ;;
         list)
-            run list "$2"
+            shift 1
+            extract_opts "$@"
+            run list "${opts[0]}" "${args[@]}"
             res=$?
             banner_results $res
             exit $res
             ;;
         restore)
-            descriptor="$2"
-            shift 2
-            args=()
-            extract_args "$@"
-            run restore "$descriptor" "${args[@]}"
+            shift 1
+            extract_opts "$@"
+            run restore "${opts[0]}" "${args[@]}"
             res=$?
             banner_results $res
             exit $res
             ;;
         *)
-            echo "${0##*/} backup DESCIPTOR"
-            echo "${0##*/} restore DESCIPTOR [...]"
-            echo "${0##*/} list DESCIPTOR"
-            echo "${0##*/} help"
+            cat <<EOF
+USAGE
+
+    ${0##*/} backup DESCIPTOR  [OPTIONS...] [-- [...]]
+    ${0##*/} restore DESCIPTOR [OPTIONS...] [-- [...]]
+    ${0##*/} list DESCIPTOR    [OPTIONS...] [-- [...]]
+    ${0##*/} help
+
+NOTES ABOUT OPTIONS
+
+    Key-values options are specified by one of these three syntax:
+    
+        --option=value
+        --option value
+        option=value
+
+    Boolean options can be specified by one of these syntax:
+    
+        -option          enable option
+        +option          disable option
+        --no-option      disable option
+        --disable-option disable option
+        --enable-option  enable option
+        
+    Setting an option that isn't documented can result in undefined behaviour.
+
+GANERAL OPTIONS
+
+    -n  only print the commant that will be executed, do not run them
+
+EOF
             return 1
             ;;
     esac
 }
 
-# READ  $@    : Arguments to extract
-# WRITE $args : Array of arguments appearing after -- in $@
-extract_args(){
-    until [[ $# -le 0 ]] || [[ $1 = -- ]]; do
-        shift
+# READ  $@                 : Extract --VAR=VALUE --VAR VALUE, -BOOLOPT, +BOOLOPT
+# WRITE $opt_<OPTNAME>     : the option extracted
+# WRITE $opts              : option output array containing unparsed arguments
+# WRITE $args              : anything after --
+extract_opts(){
+    opts=()
+    args=()
+    local _optname
+    local _optval
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --)
+          shift
+          args=("$@")
+          break
+        ;;
+        --*=*)
+          _optname="${1%%=*}"
+          _optname="${_optname#--}"
+          _optval="${1#*=}"
+          _optval="${_optval//-/_}"
+          eval "opt_$_optname='${_optval//'/'\"'\"'}'"
+          shift
+        ;;
+        --*)
+          _optname="${1#--}"
+          _optval="$2"
+          
+          eval "opt_$_optname='${_optval//'/'\"'\"'}'"
+          shift 2
+        ;;
+        --no-*)
+          _optname="${1#--no-}"
+          eval "opt_$_optname=false"
+          shift
+        ;;
+        --disable-*)
+          _optname="${1#--disable-}"
+          eval "opt_$_optname=false"
+          shift
+        ;;
+        --enable-*)
+          _optname="${1#--enable-}"
+          eval "opt_$_optname=true"
+          shift
+        ;;
+        -*)
+          _optname="${1#-}"
+          eval "opt_$_optname=true"
+          shift
+        ;;
+        +*)
+          _optname="${1#+}"
+          eval "opt_$_optname=false"
+          shift
+        ;;
+        *)
+          opts+=("$1")
+          shift
+        ;;
+      esac
     done
-    shift
-    args=("$@")
 }
 
 # READ $driver
 # READ $driver_dir
 driver(){
+    export BACKUP_DRY_RUN=$opt_n
     export BACKUP_DIR="$driver_dir/$subdir"
     export BACKUP_DRIVER_DIR="$driver_dir"
     export BACKUP_DRIVER_SOURCE_DIR="$(readlink -f $driver)"
@@ -59,6 +145,7 @@ driver(){
         (
         echo "    driver: $driver"
         echo "    arguments: $@"
+        echo "    BACKUP_DRY_RUN=$BACKUP_DRY_RUN"
         echo "    BACKUP_DIR=$BACKUP_DIR"
         echo "    BACKUP_DRIVER_DIR=$BACKUP_DRIVER_DIR"
         echo "    BACKUP_DRIVER_SOURCE_DIR=$BACKUP_DRIVER_SOURCE_DIR"

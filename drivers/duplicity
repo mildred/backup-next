@@ -11,6 +11,13 @@ get_destdir(){
     destdir="${1#/}"; destdir="${destdir%/}"; destdir="${destdir//\//-}"
 }
 
+run() {
+    echo + "$@"
+    if ! ${BACKUP_DRY_RUN:-false}; then
+        "$@"
+    fi
+}
+
 act="$1"
 shift
 case "$act" in
@@ -28,14 +35,10 @@ case "$act" in
         fi
         shift
         set -e
-        ( set -x
-          duplicity --full-if-older-than $FULL_BACKUP_PERIOD "${FLAGS[@]}" "${FLAGS_BACKUP[@]}" "$@" "${dirflags[@]}" "$(readlink -f "$dir")" "$DESTINATION/$destdir"
-        )
+        run duplicity --full-if-older-than $FULL_BACKUP_PERIOD "${FLAGS[@]}" "${FLAGS_BACKUP[@]}" "$@" "${dirflags[@]}" "$(readlink -f "$dir")" "$DESTINATION/$destdir"
         set +e
         if $AUTO_PRUNE; then
-        ( set -x
-          duplicity remove-older-than "$AUTO_PRUNE_DELAY" --force "${FLAGS[@]}" "$DESTINATION/$destdir"
-        )
+          run duplicity remove-older-than "$AUTO_PRUNE_DELAY" --force "${FLAGS[@]}" "$DESTINATION/$destdir"
         fi
     ;;
     list)
@@ -43,18 +46,14 @@ case "$act" in
         get_destdir "$1"
         shift
         set -e
-        ( set -x
-          duplicity collection-status "${FLAGS[@]}" "$@" "$DESTINATION/$destdir"
-        )
+        run duplicity collection-status "${FLAGS[@]}" "$@" "$DESTINATION/$destdir"
     ;;
     restore)
         dir="$1"
         get_destdir "$1"
         shift
         set -e
-        ( set -x
-          duplicity restore "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$(readlink -f "$dir")"
-        )
+        run duplicity restore "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$(readlink -f "$dir")"
     ;;
     commit)
         subact="$1"
