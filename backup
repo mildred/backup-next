@@ -203,8 +203,9 @@ get_type(){
         type=link
     elif [[ $type == d ]]; then
         # Alias *.d are sub
-        type=sub;
+        type=sub
     elif [[ $type == md ]]; then
+        # Alias *.md are txt
         type=txt
     fi
 }
@@ -226,10 +227,6 @@ run() {
     shift 2
 
     get_type
-
-    if [[ $type == txt ]]; then
-        banner_info "Skip: $descriptor"
-    fi
 
     # look in the same directory of the driver for anything else but sub
     if [[ $type != sub ]]; then
@@ -333,6 +330,14 @@ run_sh(){
 }
 
 run_conf(){ : ; }
+
+run_txt(){
+    true
+}
+
+run_md(){
+    true
+}
 
 # Reset
 Color_Off='\e[0m'       # Text Reset
