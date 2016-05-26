@@ -20,6 +20,8 @@ more types, and the default built-in types are:
 
   * **`*.sh`:** This file will be sourced as a shell script
 
+  * **`*.md`, `*.txt`:** These files are ignored
+
   * Any other file extension can be defined by extensions.
 
 The driver can be configured within a directory descriptor by adding a symbolic

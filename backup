@@ -201,9 +201,11 @@ get_type(){
     elif [[ $type == dir ]] && [[ -L $descriptor ]]; then
         # Alias *.dir links as link
         type=link
-    elif [[ $type == d ]];
+    elif [[ $type == d ]]; then
         # Alias *.d are sub
-        then type=sub;
+        type=sub;
+    elif [[ $type == md ]]; then
+        type=txt
     fi
 }
 
@@ -224,6 +226,10 @@ run() {
     shift 2
 
     get_type
+
+    if [[ $type == txt ]]; then
+        banner_info "Skip: $descriptor"
+    fi
 
     # look in the same directory of the driver for anything else but sub
     if [[ $type != sub ]]; then

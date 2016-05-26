@@ -56,20 +56,7 @@ their directory.
 Default Descriptor Types
 ------------------------
 
-Depending of the file, the descriptor can have different types. Drivers can add
-more types, and the default built-in types are:
-
-  * **Directories with no extension or matching `*.d`:** This directory must
-    contain other descriptors, and will run the defined action with each one of
-    them.
-
-  * **Links pointing to directories matching `*.{dir,link}`:** The
-    content of that directory pointed by the symbolic link will be backed-up
-    recursively.
-
-  * **`*.exec`:** This file will be executed
-
-  * **`*.sh`:** This file will be sourced as a shell script
+See the README.md file in backup.d
 
 The rdiff-backup driver
 -----------------------
