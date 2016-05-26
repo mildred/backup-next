@@ -1,0 +1,10 @@
+---
+build:
+  prepare: rm -rf fpmroot
+  install: make DESTDIR=$PWD/fpmroot PREFIX=/usr install
+fpm:
+  - --name=backup
+  - --version=1.0
+  - -sdir
+  - -Cfpmroot
+  - .

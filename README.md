@@ -28,7 +28,7 @@ Usage
     `/etc/backup.d`. This command will restore the files last backed-up by the
     same descriptor. Additional arguments an be passed to the backend.
 
-  * `backup backup DESCRIPTOR`
+  * `backup list DESCRIPTOR`
 
     List the backups made by the descriptor
 
@@ -45,7 +45,7 @@ with a driver, which describes how to back-up the files.
 The driver can add more descriptor types and can handle some configuration files
 if wanted.
 
-To dinf the driver for a given descriptor, the backup system will try to find a
+To find the driver for a given descriptor, the backup system will try to find a
 file named `driver` or `driver.sh` that is in the same directory as the
 descriptor. The `driver` or `driver.sh` is generally a symbolic link pointing to
 a driver implementation in `PREFIX/share/backup/drivers/`.

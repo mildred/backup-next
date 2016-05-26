@@ -209,6 +209,7 @@ get_type(){
 
 # READ $1      : the action (backup, list)
 # READ $2      : the backup descriptor
+# READ $3...   : the backup options
 # READ $driver : the driver to use. If empty, the descriptor must be a directory
 run() {
     local type
