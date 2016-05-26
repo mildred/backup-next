@@ -2,7 +2,7 @@ DESTDIR=
 PREFIX=/usr/local
 BINDIR=$(PREFIX)/bin
 SHAREDIR=$(PREFIX)/share
-ETCDIR=$(PREFIX)/etc
+ETCDIR=/etc
 
 help:
 	@echo "make DESTDIR=... PREFIX=$(PREFIX) install"
