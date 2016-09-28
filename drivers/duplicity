@@ -11,11 +11,34 @@ get_destdir(){
     destdir="${1#/}"; destdir="${destdir%/}"; destdir="${destdir//\//-}"
 }
 
+print_args(){
+    while [[ $# -gt 0 ]]; do
+        if [[ "$1" == "${1//[ *\$\"]/}" ]]; then
+            printf " %s" "$1"
+        else
+            printf " '%s'" "$1"
+        fi
+        shift
+    done
+    echo
+}
+
 run() {
-    echo + "$@"
+    printf +
+    print_args "$@"
     if ! ${BACKUP_DRY_RUN:-false}; then
         "$@"
     fi
+}
+
+has_force(){
+    while [[ $# -gt 0 ]]; do
+        if [[ "a$1" == "a--force" ]]; then
+            return 0
+        fi
+        shift
+    done
+    return 1
 }
 
 act="$1"
@@ -49,11 +72,23 @@ case "$act" in
         run duplicity collection-status "${FLAGS[@]}" "$@" "$DESTINATION/$destdir"
     ;;
     restore)
-        dir="$1"
+        dest="$1"
+        realdest="$(readlink -f "$dest")"
+        dir="${realdest%/*}/"
         get_destdir "$1"
         shift
         set -e
-        run duplicity restore "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$(readlink -f "$dir")"
+        if [[ "$dir" == "$realdest" ]]; then
+            run duplicity restore "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$realdest"
+        elif [[ -e "$realdest" ]] && ! has_force "$@"; then
+            echo "$realdest: File already exists, use --force to overwrite"
+            false
+        else
+            r=$RANDOM
+            run duplicity restore "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$realdest.restore.$r"
+            run mv -f "$realdest.restore.$r/$(basename "$dest")" "$realdest"
+            run rmdir "$realdest.restore.$r"
+        fi
     ;;
     commit)
         subact="$1"
