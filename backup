@@ -1,6 +1,6 @@
 #!/bin/bash
 
-driver=:
+driver=
 
 opt_n=false
 
