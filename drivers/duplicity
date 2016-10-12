@@ -73,21 +73,20 @@ case "$act" in
     ;;
     restore)
         dest="$1"
-        realdest="$(readlink "$dest")"
-        dir="${realdest%/*}/"
+        dir="${dest%/*}/"
         get_destdir "$1"
         shift
         set -e
-        if [[ "$dir" == "$realdest" ]]; then
-            run duplicity restore "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$realdest"
-        elif [[ -e "$realdest" ]] && ! has_force "$@"; then
-            echo "$realdest: File already exists, use --force to overwrite"
+        if [[ "$dir" == "$dest" ]]; then
+            run duplicity restore "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$dest"
+        elif [[ -e "$dest" ]] && ! has_force "$@"; then
+            echo "$dest: File already exists, use --force to overwrite"
             false
         else
             r=$RANDOM
-            run duplicity restore "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$realdest.restore.$r"
-            run mv -f "$realdest.restore.$r/$(basename "$dest")" "$realdest"
-            run rmdir "$realdest.restore.$r"
+            run duplicity restore "${FLAGS[@]}" "$@" "$DESTINATION/$destdir" "$dest.restore.$r"
+            run mv -f "$dest.restore.$r/$(basename "$dest")" "$dest"
+            run rmdir "$dest.restore.$r"
         fi
     ;;
     commit)
