@@ -192,10 +192,10 @@ find_driver(){
 # WRITE $type       : the descriptor type
 get_type(){
     # Get the extension
-    local type0=${descriptor##*/}
-    type=${type0##*.}
+    local basename=${descriptor##*/}
+    type=${basename##*.}
 
-    if [[ $type = ${type0} ]] && [[ -d $descriptor ]]; then
+    if [[ $type = ${basename} ]] && [[ -d $descriptor ]]; then
         # If no extension and is a directory, consider it a sub
         type=sub
     elif [[ $type == dir ]] && [[ -L $descriptor ]]; then
