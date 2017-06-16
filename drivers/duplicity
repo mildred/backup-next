@@ -53,12 +53,12 @@ case "$act" in
         get_destdir "$1"
         dirflags=()
         if ! [[ -d $dir ]]; then
-            dirflags=(--include "$(readlink "${dir%/*}")/${dir##*/}" --exclude '**')
+            dirflags=(--include "${dir%/*}/${dir##*/}" --exclude '**')
             dir="${dir%/*}/"
         fi
         shift
         set -e
-        run duplicity --full-if-older-than $FULL_BACKUP_PERIOD "${FLAGS[@]}" "${FLAGS_BACKUP[@]}" "$@" "${dirflags[@]}" "$(readlink "$dir")" "$DESTINATION/$destdir"
+        run duplicity incremental --full-if-older-than $FULL_BACKUP_PERIOD "${FLAGS[@]}" "${FLAGS_BACKUP[@]}" "$@" "${dirflags[@]}" "$dir" "$DESTINATION/$destdir"
         set +e
         if $AUTO_PRUNE; then
           run duplicity remove-older-than "$AUTO_PRUNE_DELAY" --force "${FLAGS[@]}" "$DESTINATION/$destdir"
